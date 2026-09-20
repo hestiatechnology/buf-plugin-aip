@@ -17,9 +17,12 @@ import (
 )
 
 const (
-	categoryAIP           = "AIP"
-	categoryAIPCore       = "AIP_CORE"
-	categoryAIPClientLibs = "AIP_CLIENT_LIBRARIES"
+	categoryAIP            = "AIP"
+	categoryAIPCore        = "AIP_CORE"
+	categoryAIPClientLibs  = "AIP_CLIENT_LIBRARIES"
+	categoryAIPRecommended = "AIP_RECOMMENDED"
+	categoryAIPCRUD        = "AIP_CRUD"
+	categoryAIPNoLang      = "AIP_NOLANG"
 )
 
 type resultsContextKey struct{}
@@ -61,6 +64,27 @@ func NewSpec() (*check.Spec, error) {
 			categoryIDs = append(categoryIDs, groupCat)
 		}
 
+		// Curated Presets
+		isCRUD := aipNum == "0131" || aipNum == "0132" || aipNum == "0133" || aipNum == "0134" || aipNum == "0135" || aipNum == "0136"
+		if isCRUD {
+			categoryIDs = append(categoryIDs, categoryAIPCRUD)
+		}
+
+		isLanguageRule := strings.HasPrefix(ruleID, "AIP_0191_JAVA_") ||
+			strings.HasPrefix(ruleID, "AIP_0191_CSHARP_") ||
+			strings.HasPrefix(ruleID, "AIP_0191_PHP_") ||
+			strings.HasPrefix(ruleID, "AIP_0191_RUBY_")
+		if group == "core" && !isLanguageRule {
+			categoryIDs = append(categoryIDs, categoryAIPNoLang)
+		}
+
+		isCommentRule := strings.HasPrefix(ruleID, "AIP_0192_")
+		isPrepositionRule := ruleID == "AIP_0140_PREPOSITIONS" || ruleID == "AIP_0136_PREPOSITIONS"
+
+		if group == "core" && !isLanguageRule && !isCommentRule && !isPrepositionRule {
+			categoryIDs = append(categoryIDs, categoryAIPRecommended)
+		}
+
 		isDefault := group == "core"
 		purpose := fmt.Sprintf("Checks AIP rule %s.", name)
 
@@ -92,6 +116,18 @@ func NewSpec() (*check.Spec, error) {
 		{
 			ID:      categoryAIPClientLibs,
 			Purpose: "Checks client library API Improvement Proposals (https://aip.dev).",
+		},
+		{
+			ID:      categoryAIPRecommended,
+			Purpose: "Checks recommended core API rules (omits comment and language-specific packaging checks).",
+		},
+		{
+			ID:      categoryAIPCRUD,
+			Purpose: "Checks standard resource CRUD methods (AIP-131 through AIP-136).",
+		},
+		{
+			ID:      categoryAIPNoLang,
+			Purpose: "Checks core API rules without language-specific packaging requirements.",
 		},
 	}
 
@@ -223,14 +259,32 @@ func before(registry lint.RuleRegistry) func(ctx context.Context, req check.Requ
 			}
 		}
 
+		ignoreComments, _ := option.GetBoolValue(req.Options(), "ignore_comments")
+		skipLanguage, _ := option.GetBoolValue(req.Options(), "skip_language_options")
+		allowPrepositions, _ := option.GetBoolValue(req.Options(), "allow_prepositions")
+
 		for _, resp := range responses {
 			diskPath := resolveDiskPath(resp.FilePath, baseDir)
 			for _, prob := range resp.Problems {
+				bufID := ruleNameToBufRuleID(prob.RuleID)
+
+				if ignoreComments && strings.HasPrefix(bufID, "AIP_0192_") {
+					continue
+				}
+				if skipLanguage && (strings.HasPrefix(bufID, "AIP_0191_JAVA_") ||
+					strings.HasPrefix(bufID, "AIP_0191_CSHARP_") ||
+					strings.HasPrefix(bufID, "AIP_0191_PHP_") ||
+					strings.HasPrefix(bufID, "AIP_0191_RUBY_")) {
+					continue
+				}
+				if allowPrepositions && (bufID == "AIP_0140_PREPOSITIONS" || bufID == "AIP_0136_PREPOSITIONS") {
+					continue
+				}
+
 				if autoFix && prob.Location != nil && fixedProblems[diskPath] != nil && fixedProblems[diskPath][int(prob.Location.Span[0])] {
 					// Suppress annotation since it was auto-fixed on disk
 					continue
 				}
-				bufID := ruleNameToBufRuleID(prob.RuleID)
 				filePath := resp.FilePath
 				if filePath == "" && prob.Descriptor != nil && prob.Descriptor.ParentFile() != nil {
 					filePath = prob.Descriptor.ParentFile().Path()

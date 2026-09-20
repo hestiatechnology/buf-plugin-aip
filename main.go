@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"buf.build/go/bufplugin/check"
 )
@@ -11,6 +12,11 @@ import (
 var version = "dev"
 
 func main() {
+	if isPluginRPC() {
+		runPlugin()
+		return
+	}
+
 	if len(os.Args) > 1 {
 		switch os.Args[1] {
 		case "--version", "-v":
@@ -34,11 +40,32 @@ func main() {
 		}
 	}
 
+	runPlugin()
+}
+
+func isPluginRPC() bool {
+	if len(os.Args) <= 1 {
+		return true
+	}
+	first := os.Args[1]
+	if first == "--protocol" || first == "--spec" {
+		return true
+	}
+	if first == "check" || first == "list-rules" || first == "list-categories" {
+		for _, arg := range os.Args[2:] {
+			if strings.Contains(arg, "binary") {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func runPlugin() {
 	spec, err := NewSpec()
 	if err != nil {
 		log.Fatalf("failed to create AIP plugin spec: %v", err)
 	}
-
 	check.Main(spec)
 }
 

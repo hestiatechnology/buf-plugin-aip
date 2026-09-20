@@ -58,17 +58,43 @@ buf lint
 
 ## Configuration Examples
 
-### 1. Enabling All AIP Rules
+### 1. Curated Presets (Recommended)
+Instead of enabling all 340+ rules at once (which requires doc comments on every field and language-specific options), use a curated preset:
+
 ```yaml
 version: v2
 lint:
   use:
-    - AIP
+    - AIP_RECOMMENDED # Core API design without pedantic comments or language options
 plugins:
   - plugin: buf-plugin-aip
 ```
 
-### 2. Targeting a Specific AIP (e.g. AIP-131)
+Available presets:
+- **`AIP_RECOMMENDED`**: High-value API design (CRUD signatures, resource naming, pagination, HTTP mappings) omitting comment and language-specific checks.
+- **`AIP_CRUD`**: Standard resource methods only (AIP-131 through AIP-136: Get, List, Create, Update, Delete, Custom methods).
+- **`AIP_NOLANG`**: Core rules without language-specific packaging options (Java, C#, PHP, Ruby).
+- **`AIP_CORE`**: All core rules (default set).
+- **`AIP`**: All 342 AIP rules.
+
+### 2. Convenience Options in `buf.yaml`
+Easily toggle common categories without maintaining long `except:` lists:
+
+```yaml
+version: v2
+lint:
+  use:
+    - AIP_CORE
+plugins:
+  - plugin: buf-plugin-aip
+    options:
+      auto_fix: true               # Auto-fix machine-correctable violations
+      ignore_comments: true        # Skip AIP-192 doc comment requirements
+      skip_language_options: true  # Skip AIP-191 Java/C#/PHP/Ruby packaging
+      allow_prepositions: true     # Allow 'by' in created_by, updated_by
+```
+
+### 3. Targeting a Specific AIP (e.g. AIP-131)
 ```yaml
 version: v2
 lint:

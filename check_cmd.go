@@ -42,6 +42,7 @@ func runCheck(args []string) {
 	fs.Var(&exceptFilter, "except", "Exclude specific rule(s) or category, e.g. AIP_0192_HAS_COMMENTS")
 	fixableOnly := fs.Bool("fixable-only", false, "Only display violations that can be auto-fixed")
 	asJSON := fs.Bool("json", false, "Output results as JSON")
+	format := fs.String("format", "text", "Output format: text, json, github-actions")
 
 	fs.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: buf-plugin-aip check [flags] [paths...]\n\n")
@@ -189,10 +190,24 @@ func runCheck(args []string) {
 		return allProblems[i].Column < allProblems[j].Column
 	})
 
-	if *asJSON {
+	if *asJSON || *format == "json" {
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
 		_ = enc.Encode(allProblems)
+		if len(allProblems) > 0 {
+			os.Exit(1)
+		}
+		return
+	}
+
+	if *format == "github-actions" || *format == "github" {
+		for _, p := range allProblems {
+			docPart := ""
+			if p.DocURL != "" {
+				docPart = fmt.Sprintf(" (%s)", p.DocURL)
+			}
+			fmt.Printf("::error file=%s,line=%d,col=%d::%s%s [%s]\n", p.FilePath, p.Line, p.Column, p.Message, docPart, p.RuleID)
+		}
 		if len(allProblems) > 0 {
 			os.Exit(1)
 		}

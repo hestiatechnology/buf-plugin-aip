@@ -4,7 +4,9 @@ go 1.26.8
 
 require (
 	buf.build/go/bufplugin v0.10.0
+	github.com/bufbuild/protocompile v0.14.1
 	github.com/googleapis/api-linter/v2 v2.4.0
+	github.com/pmezard/go-difflib v1.0.0
 	google.golang.org/protobuf v1.36.12
 )
 
@@ -20,7 +22,6 @@ require (
 	cloud.google.com/go/longrunning v1.2.0 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.10.1 // indirect
-	github.com/bufbuild/protocompile v0.14.1 // indirect
 	github.com/gertd/go-pluralize v0.2.1 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect

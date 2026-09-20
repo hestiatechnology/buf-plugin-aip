@@ -11,9 +11,13 @@ import (
 var version = "dev"
 
 func main() {
-	for _, arg := range os.Args[1:] {
-		if arg == "--version" || arg == "-v" {
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "--version", "-v":
 			fmt.Println(version)
+			return
+		case "fix":
+			runFix(os.Args[2:])
 			return
 		}
 	}

@@ -122,6 +122,37 @@ Where `api-linter.yaml`:
 
 ---
 
+## Auto-Fix CLI (`buf-plugin-aip fix`)
+
+`buf-plugin-aip` includes an integrated auto-fixer capable of automatically resolving machine-fixable AIP violations in `.proto` files (e.g. timestamp field suffixes `_at` $\rightarrow$ `_time`, RPC request message naming, enum formatting, forbidden types).
+
+### Dry-run & Diff
+Inspect suggested fixes without modifying files:
+```bash
+# Preview fixes with unified diff
+buf-plugin-aip fix --dry-run --diff ./proto
+```
+
+### Apply Fixes
+Apply all fixes directly to files:
+```bash
+buf-plugin-aip fix ./proto
+```
+
+### Granular Filtering
+```bash
+# Fix only timestamp naming (AIP-142)
+buf-plugin-aip fix --category AIP_0142 ./proto
+
+# Fix specific rule
+buf-plugin-aip fix --rule AIP_0133_REQUEST_RESOURCE_FIELD ./proto
+
+# Exclude specific rules from being auto-fixed
+buf-plugin-aip fix --except AIP_0122_NAME_SUFFIX ./proto
+```
+
+---
+
 ## Rule ID Mapping
 
 Google API Linter rule names follow `<group>::<aip>::<name>` and are converted to standard Buf rule IDs:

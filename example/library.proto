@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package library.v1;
+
+// LibraryService provides access to book resources.
+service LibraryService {
+  // Retrieves a book by name.
+  rpc GetBook(BadBookRequest) returns (Book);
+}
+
+message BadBookRequest {
+  string name = 1;
+}
+
+message Book {
+  string name = 1;
+}

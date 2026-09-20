@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test & Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: "go.mod"
+          cache: true
+
+      - name: Run go vet
+        run: go vet ./...
+
+      - name: Run unit & integration tests
+        run: go test -v -race ./...
+
+      - name: Build binary
+        run: go build -v -o buf-plugin-aip .
+
+      - name: Set up Buf CLI
+        uses: bufbuild/buf-setup-action@v1.50.0
+
+      - name: Verify end-to-end with buf lint
+        run: |
+          export PATH="$PWD:$PATH"
+          cd example
+          # In example/, AIP_0131 is used and should catch the violation in library.proto
+          if buf lint; then
+            echo "Expected buf lint to detect AIP violations, but it exited with 0"
+            exit 1
+          else
+            echo "buf lint successfully caught AIP violations as expected!"
+          fi

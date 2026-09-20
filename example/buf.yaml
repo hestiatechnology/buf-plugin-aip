@@ -1,0 +1,8 @@
+version: v2
+modules:
+  - path: .
+lint:
+  use:
+    - AIP_0131
+plugins:
+  - plugin: buf-plugin-aip

@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -167,8 +169,67 @@ func before(registry lint.RuleRegistry) func(ctx context.Context, req check.Requ
 			return nil, nil, fmt.Errorf("api-linter failed: %w", err)
 		}
 
+		autoFix, _ := option.GetBoolValue(req.Options(), "auto_fix")
+		if !autoFix {
+			if s, err := option.GetStringValue(req.Options(), "auto_fix"); err == nil {
+				autoFix = s == "true" || s == "1"
+			}
+		}
+
+		baseDir, _ := option.GetStringValue(req.Options(), "base_dir")
+		if baseDir == "" {
+			baseDir = "."
+		}
+
+		fixedProblems := make(map[string]map[int]bool)
+		if autoFix {
+			fileReplacements := make(map[string][]textReplacement)
+			for _, resp := range responses {
+				for _, prob := range resp.Problems {
+					if prob.Suggestion == "" || prob.Location == nil || len(prob.Location.Span) < 3 {
+						continue
+					}
+					diskPath := resolveDiskPath(resp.FilePath, baseDir)
+					span := prob.Location.Span
+					r := textReplacement{
+						startLine: int(span[0]),
+						startCol:  int(span[1]),
+						newText:   prob.Suggestion,
+						ruleID:    ruleNameToBufRuleID(prob.RuleID),
+						message:   prob.Message,
+					}
+					if len(span) == 4 {
+						r.endLine = int(span[2])
+						r.endCol = int(span[3])
+					} else {
+						r.endLine = int(span[0])
+						r.endCol = int(span[2])
+					}
+					fileReplacements[diskPath] = append(fileReplacements[diskPath], r)
+				}
+			}
+
+			for diskPath, reps := range fileReplacements {
+				applied, _, err := applyReplacements(diskPath, reps, false)
+				if err == nil && applied > 0 {
+					fmt.Fprintf(os.Stderr, "[buf-plugin-aip] auto-fixed %d issue(s) in %s\n", applied, diskPath)
+					if fixedProblems[diskPath] == nil {
+						fixedProblems[diskPath] = make(map[int]bool)
+					}
+					for _, r := range reps {
+						fixedProblems[diskPath][r.startLine] = true
+					}
+				}
+			}
+		}
+
 		for _, resp := range responses {
+			diskPath := resolveDiskPath(resp.FilePath, baseDir)
 			for _, prob := range resp.Problems {
+				if autoFix && prob.Location != nil && fixedProblems[diskPath] != nil && fixedProblems[diskPath][int(prob.Location.Span[0])] {
+					// Suppress annotation since it was auto-fixed on disk
+					continue
+				}
 				bufID := ruleNameToBufRuleID(prob.RuleID)
 				filePath := resp.FilePath
 				if filePath == "" && prob.Descriptor != nil && prob.Descriptor.ParentFile() != nil {
@@ -183,6 +244,52 @@ func before(registry lint.RuleRegistry) func(ctx context.Context, req check.Requ
 
 		return context.WithValue(ctx, resultsContextKey{}, results), req, nil
 	}
+}
+
+func resolveDiskPath(protoPath string, baseDir string) string {
+	if filepath.IsAbs(protoPath) {
+		if _, err := os.Stat(protoPath); err == nil {
+			return protoPath
+		}
+	}
+	if baseDir != "" && baseDir != "." {
+		target := filepath.Join(baseDir, protoPath)
+		if _, err := os.Stat(target); err == nil {
+			return target
+		}
+	}
+	if _, err := os.Stat(protoPath); err == nil {
+		return protoPath
+	}
+	candidates := []string{
+		filepath.Join("proto", protoPath),
+		filepath.Join("protos", protoPath),
+		filepath.Join("src", protoPath),
+	}
+	for _, c := range candidates {
+		if _, err := os.Stat(c); err == nil {
+			return c
+		}
+	}
+	var found string
+	searchRoot := "."
+	if baseDir != "" {
+		searchRoot = baseDir
+	}
+	_ = filepath.Walk(searchRoot, func(p string, info os.FileInfo, err error) error {
+		if err != nil || info.IsDir() {
+			return nil
+		}
+		if strings.HasSuffix(filepath.ToSlash(p), filepath.ToSlash(protoPath)) {
+			found = p
+			return filepath.SkipAll
+		}
+		return nil
+	})
+	if found != "" {
+		return found
+	}
+	return protoPath
 }
 
 func ruleNameToBufRuleID(name lint.RuleName) string {

@@ -120,6 +120,20 @@ Where `api-linter.yaml`:
     - core::0131::method-signature
 ```
 
+### 5. Auto-Fix via `buf.yaml` (`options.auto_fix`)
+You can enable automatic in-place fixing during `buf lint`. Any machine-fixable violation will be automatically corrected on disk and suppressed from the error list:
+
+```yaml
+version: v2
+lint:
+  use:
+    - AIP_CORE
+plugins:
+  - plugin: buf-plugin-aip
+    options:
+      auto_fix: true
+```
+
 ---
 
 ## Auto-Fix CLI (`buf-plugin-aip fix`)

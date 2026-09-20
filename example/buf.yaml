@@ -4,5 +4,8 @@ modules:
 lint:
   use:
     - AIP_0131
+    - AIP_0141
 plugins:
   - plugin: buf-plugin-aip
+    options:
+      auto_fix: true

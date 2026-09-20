@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"buf.build/go/bufplugin/check/checktest"
@@ -134,4 +135,53 @@ message Book {
 		ExpectedAnnotations: nil, // Should be empty because the rule was disabled in config
 	}
 	checkTest.Run(t)
+}
+
+func TestCheckWithAutoFixOption(t *testing.T) {
+	spec, err := NewSpec()
+	if err != nil {
+		t.Fatalf("failed to create spec: %v", err)
+	}
+
+	tempDir := t.TempDir()
+	protoContent := `syntax = "proto3";
+
+package test.v1;
+
+message Book {
+  uint32 total_pages = 1;
+}
+`
+	protoFile := filepath.Join(tempDir, "test.proto")
+	if err := os.WriteFile(protoFile, []byte(protoContent), 0644); err != nil {
+		t.Fatalf("failed to write proto file: %v", err)
+	}
+
+	reqSpec := &checktest.RequestSpec{
+		Files: &checktest.ProtoFileSpec{
+			DirPaths:  []string{tempDir},
+			FilePaths: []string{"test.proto"},
+		},
+		RuleIDs: []string{"AIP_0141_FORBIDDEN_TYPES"},
+		Options: map[string]any{
+			"auto_fix": true,
+			"base_dir": tempDir,
+		},
+	}
+
+	checkTest := checktest.CheckTest{
+		Request:             reqSpec,
+		Spec:                spec,
+		ExpectedAnnotations: nil, // Should be suppressed because auto_fix fixed it on disk
+	}
+	checkTest.Run(t)
+
+	// Verify file on disk was modified to int32
+	diskContent, err := os.ReadFile(protoFile)
+	if err != nil {
+		t.Fatalf("failed to read file: %v", err)
+	}
+	if !strings.Contains(string(diskContent), "int32 total_pages = 1;") {
+		t.Errorf("expected uint32 to be auto-fixed to int32 on disk, got:\n%s", string(diskContent))
+	}
 }

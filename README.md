@@ -77,8 +77,8 @@ Available presets:
 - **`AIP_CORE`**: All core rules (default set).
 - **`AIP`**: All 342 AIP rules.
 
-### 2. Convenience Options in `buf.yaml`
-Easily toggle common categories without maintaining long `except:` lists:
+### 2. Auto-Fix via `buf.yaml` (`options.auto_fix`)
+You can enable automatic in-place fixing during `buf lint`. Any machine-fixable violation will be automatically corrected on disk and suppressed from the error list:
 
 ```yaml
 version: v2
@@ -88,10 +88,7 @@ lint:
 plugins:
   - plugin: buf-plugin-aip
     options:
-      auto_fix: true               # Auto-fix machine-correctable violations
-      ignore_comments: true        # Skip AIP-192 doc comment requirements
-      skip_language_options: true  # Skip AIP-191 Java/C#/PHP/Ruby packaging
-      allow_prepositions: true     # Allow 'by' in created_by, updated_by
+      auto_fix: true
 ```
 
 ### 3. Targeting a Specific AIP (e.g. AIP-131)
@@ -144,20 +141,6 @@ Where `api-linter.yaml`:
 ```yaml
 - disabled_rules:
     - core::0131::method-signature
-```
-
-### 5. Auto-Fix via `buf.yaml` (`options.auto_fix`)
-You can enable automatic in-place fixing during `buf lint`. Any machine-fixable violation will be automatically corrected on disk and suppressed from the error list:
-
-```yaml
-version: v2
-lint:
-  use:
-    - AIP_CORE
-plugins:
-  - plugin: buf-plugin-aip
-    options:
-      auto_fix: true
 ```
 
 ---

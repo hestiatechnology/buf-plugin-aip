@@ -259,27 +259,10 @@ func before(registry lint.RuleRegistry) func(ctx context.Context, req check.Requ
 			}
 		}
 
-		ignoreComments, _ := option.GetBoolValue(req.Options(), "ignore_comments")
-		skipLanguage, _ := option.GetBoolValue(req.Options(), "skip_language_options")
-		allowPrepositions, _ := option.GetBoolValue(req.Options(), "allow_prepositions")
-
 		for _, resp := range responses {
 			diskPath := resolveDiskPath(resp.FilePath, baseDir)
 			for _, prob := range resp.Problems {
 				bufID := ruleNameToBufRuleID(prob.RuleID)
-
-				if ignoreComments && strings.HasPrefix(bufID, "AIP_0192_") {
-					continue
-				}
-				if skipLanguage && (strings.HasPrefix(bufID, "AIP_0191_JAVA_") ||
-					strings.HasPrefix(bufID, "AIP_0191_CSHARP_") ||
-					strings.HasPrefix(bufID, "AIP_0191_PHP_") ||
-					strings.HasPrefix(bufID, "AIP_0191_RUBY_")) {
-					continue
-				}
-				if allowPrepositions && (bufID == "AIP_0140_PREPOSITIONS" || bufID == "AIP_0136_PREPOSITIONS") {
-					continue
-				}
 
 				if autoFix && prob.Location != nil && fixedProblems[diskPath] != nil && fixedProblems[diskPath][int(prob.Location.Span[0])] {
 					// Suppress annotation since it was auto-fixed on disk

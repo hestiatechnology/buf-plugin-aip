@@ -136,33 +136,65 @@ plugins:
 
 ---
 
-## Auto-Fix CLI (`buf-plugin-aip fix`)
+## CLI Commands
 
-`buf-plugin-aip` includes an integrated auto-fixer capable of automatically resolving machine-fixable AIP violations in `.proto` files (e.g. timestamp field suffixes `_at` $\rightarrow$ `_time`, RPC request message naming, enum formatting, forbidden types).
+In addition to running as a Buf plugin, `buf-plugin-aip` provides standalone CLI tools:
 
-### Dry-run & Diff
-Inspect suggested fixes without modifying files:
+### 1. Standalone Linter (`buf-plugin-aip check`)
+Lint any `.proto` files directly without requiring `buf`:
 ```bash
-# Preview fixes with unified diff
+# Check all proto files in directory
+buf-plugin-aip check ./proto
+
+# Filter by category or rule
+buf-plugin-aip check --category AIP_CORE ./proto
+buf-plugin-aip check --rule AIP_0131_HTTP_BODY ./proto
+
+# Only display violations that can be auto-fixed
+buf-plugin-aip check --fixable-only ./proto
+
+# Output violations as JSON (useful for CI scripts/tooling)
+buf-plugin-aip check --json ./proto
+```
+
+### 2. Auto-Fix (`buf-plugin-aip fix`)
+Automatically resolve machine-fixable violations in-place:
+```bash
+# Preview fixes with unified diffs
 buf-plugin-aip fix --dry-run --diff ./proto
-```
 
-### Apply Fixes
-Apply all fixes directly to files:
-```bash
+# Apply fixes directly
 buf-plugin-aip fix ./proto
+
+# Fix only specific rules or categories
+buf-plugin-aip fix --category AIP_0142 ./proto
+buf-plugin-aip fix --except AIP_0122_NAME_SUFFIX ./proto
 ```
 
-### Granular Filtering
+### 3. Rule Inspector (`buf-plugin-aip explain`)
+Inspect the requirements, rationale, spec link, and auto-fixability of any rule or AIP number:
 ```bash
-# Fix only timestamp naming (AIP-142)
-buf-plugin-aip fix --category AIP_0142 ./proto
+# Inspect a specific rule
+buf-plugin-aip explain AIP_0131_HTTP_BODY
 
-# Fix specific rule
-buf-plugin-aip fix --rule AIP_0133_REQUEST_RESOURCE_FIELD ./proto
+# Inspect an entire AIP proposal
+buf-plugin-aip explain 142
+```
 
-# Exclude specific rules from being auto-fixed
-buf-plugin-aip fix --except AIP_0122_NAME_SUFFIX ./proto
+### 4. Rule Catalog (`buf-plugin-aip list-rules`)
+Explore and search the 340+ rules:
+```bash
+# List all rules in a category
+buf-plugin-aip list-rules --category AIP_0142
+
+# List only rules that support auto-fixing
+buf-plugin-aip list-rules --fixable
+
+# Search rules by keyword
+buf-plugin-aip list-rules --search timestamp
+
+# Export rule catalog as JSON
+buf-plugin-aip list-rules --json
 ```
 
 ---

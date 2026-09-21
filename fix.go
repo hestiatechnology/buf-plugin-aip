@@ -242,6 +242,12 @@ func FixFiles(ctx context.Context, paths []string, opts FixOptions) ([]FixResult
 					continue
 				}
 
+				if prob.RuleID == "core::0191::proto-version" {
+					if f, ok := prob.Descriptor.(protoreflect.FileDescriptor); ok && f.Syntax() == protoreflect.Editions {
+						continue
+					}
+				}
+
 				bufID := ruleNameToBufRuleID(prob.RuleID)
 				if !matchesFilter(bufID, string(prob.RuleID), opts) {
 					continue

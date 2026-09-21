@@ -135,6 +135,12 @@ func runCheck(args []string) {
 
 	for _, resp := range responses {
 		for _, prob := range resp.Problems {
+			if prob.RuleID == "core::0191::proto-version" {
+				if f, ok := prob.Descriptor.(protoreflect.FileDescriptor); ok && f.Syntax() == protoreflect.Editions {
+					continue
+				}
+			}
+
 			bufID := ruleNameToBufRuleID(prob.RuleID)
 			if !matchesFilter(bufID, string(prob.RuleID), opts) {
 				continue

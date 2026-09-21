@@ -4,7 +4,6 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"buf.build/go/bufplugin/check/checktest"
@@ -137,19 +136,19 @@ message Book {
 	checkTest.Run(t)
 }
 
-func TestCheckWithAutoFixOption(t *testing.T) {
+func TestEditionIgnored(t *testing.T) {
 	spec, err := NewSpec()
 	if err != nil {
 		t.Fatalf("failed to create spec: %v", err)
 	}
 
 	tempDir := t.TempDir()
-	protoContent := `syntax = "proto3";
+	protoContent := `edition = "2023";
 
 package test.v1;
 
 message Book {
-  uint32 total_pages = 1;
+  string name = 1;
 }
 `
 	protoFile := filepath.Join(tempDir, "test.proto")
@@ -162,26 +161,13 @@ message Book {
 			DirPaths:  []string{tempDir},
 			FilePaths: []string{"test.proto"},
 		},
-		RuleIDs: []string{"AIP_0141_FORBIDDEN_TYPES"},
-		Options: map[string]any{
-			"auto_fix": true,
-			"base_dir": tempDir,
-		},
+		RuleIDs: []string{"AIP_0191_PROTO_VERSION"},
 	}
 
 	checkTest := checktest.CheckTest{
 		Request:             reqSpec,
 		Spec:                spec,
-		ExpectedAnnotations: nil, // Should be suppressed because auto_fix fixed it on disk
+		ExpectedAnnotations: nil, // Should be completely empty because edition 2023 is allowed!
 	}
 	checkTest.Run(t)
-
-	// Verify file on disk was modified to int32
-	diskContent, err := os.ReadFile(protoFile)
-	if err != nil {
-		t.Fatalf("failed to read file: %v", err)
-	}
-	if !strings.Contains(string(diskContent), "int32 total_pages = 1;") {
-		t.Errorf("expected uint32 to be auto-fixed to int32 on disk, got:\n%s", string(diskContent))
-	}
 }

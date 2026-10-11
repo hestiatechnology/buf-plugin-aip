@@ -3,7 +3,7 @@ module github.com/hestiatechnology/buf-plugin-aip
 go 1.26.8
 
 require (
-	buf.build/go/bufplugin v0.10.0
+	buf.build/go/bufplugin v0.11.1
 	github.com/bufbuild/protocompile v0.14.1
 	github.com/googleapis/api-linter/v2 v2.4.0
 	github.com/pmezard/go-difflib v1.0.0
@@ -12,7 +12,7 @@ require (
 
 require (
 	bitbucket.org/creachadair/stringset v0.0.14 // indirect
-	buf.build/gen/go/bufbuild/bufplugin/protocolbuffers/go v1.36.12-20260722160903-4d94f3df3a7b.2 // indirect
+	buf.build/gen/go/bufbuild/bufplugin/protocolbuffers/go v1.36.12-20261002170247-538130002972.2 // indirect
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.12-20260825204119-511051f7f437.2 // indirect
 	buf.build/gen/go/pluginrpc/pluginrpc/protocolbuffers/go v1.36.12-20241007202033-cf42259fcbfc.2 // indirect
 	buf.build/go/protovalidate v1.4.0 // indirect
@@ -37,5 +37,5 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260918162117-cecb64721679 // indirect
 	google.golang.org/grpc v1.84.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	pluginrpc.com/pluginrpc v0.5.0 // indirect
+	pluginrpc.com/pluginrpc v0.5.1-0.20260825152034-473fc805d0d1 // indirect
 )
